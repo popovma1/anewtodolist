@@ -30,6 +30,12 @@ version = "2023.11"
 project {
 
     buildType(Build)
+    buildType(Package)
+
+    sequential {
+        buildType(Build)
+        buildType(Package)
+    }
 }
 
 object Build : BuildType({
@@ -41,12 +47,34 @@ object Build : BuildType({
 
     steps {
         maven {
-            name = "my custom maven step name"
-            id = "Maven2"
-            goals = "clean test"
+            goals = "clean compile"
             runnerArgs = "-Dmaven.test.failure.ignore=true"
         }
     }
+
+    features {
+        perfmon {
+        }
+    }
+})
+
+object Package : BuildType({
+    name = "Package"
+
+    vcs {
+        root(DslContext.settingsRoot)
+    }
+
+    steps {
+        maven {
+            goals = "clean package"
+            runnerArgs = "-Dmaven.test.failure.ignore=true"
+        }
+    }
+
+//    dependencies {
+//        snapshot(Build) {}
+//    }
 
     triggers {
         vcs {
