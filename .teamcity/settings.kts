@@ -55,7 +55,7 @@ project {
  * @param runnerArgs - optional arguments for [goals] command
  */
 class Maven(name: String, goals: String, runnerArgs: String? = null) : BuildType({
-    id(name.toExtId())
+    id(name.toId())
     this.name = name
 
     vcs {
