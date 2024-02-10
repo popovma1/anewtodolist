@@ -29,23 +29,33 @@ version = "2023.11"
 
 project {
 
-    buildType(Build)
-    buildType(FastTest)
-    buildType(SlowTest)
-    buildType(Package)
-
-    sequential {
-        buildType(Build)
+    val sequentials = sequential {
+        buildType(Maven(name = "Build", goals = "clean compile"))
         parallel {
-            buildType(FastTest)
-            buildType(SlowTest)
+            buildType(Maven(name = "FastTest", goals = "clean test", runnerArgs = "-Dmaven.test.failure.ignore=true -Dtest=*.unit.*Test"))
+            buildType(Maven(name = "SlowTest", goals = "clean test", runnerArgs = "-Dmaven.test.failure.ignore=true -Dtest=*.integration.*Test"))
         }
-        buildType(Package)
+        buildType(Maven(name = "Package", goals = "clean package", runnerArgs = "-DskipTests"))
+    }
+
+    val buildTypes = sequentials.buildTypes()
+    buildTypes.forEach { buildType(it) }
+    buildTypes.last().triggers {
+        vcs {
+
+        }
     }
 }
 
-object Build : BuildType({
-    name = "Build"
+/**
+ * Blueprint for Maven build configurations (BuildType)
+ *
+ * @param name - name of build configuration
+ * @param goals - specific commands for maven to execute
+ * @param runnerArgs - optional arguments for [goals] command
+ */
+class Maven(name: String, goals: String, runnerArgs: String? = null) : BuildType({
+    this.name = name
 
     vcs {
         root(DslContext.settingsRoot)
@@ -53,77 +63,8 @@ object Build : BuildType({
 
     steps {
         maven {
-            goals = "clean compile"
-            runnerArgs = "-Dmaven.test.failure.ignore=true"
-        }
-    }
-
-    features {
-        perfmon {
-        }
-    }
-})
-
-object FastTest : BuildType({
-    name = "FastTest"
-
-    vcs {
-        root(DslContext.settingsRoot)
-    }
-
-    steps {
-        maven {
-            goals = "clean test"
-            runnerArgs = "-Dmaven.test.failure.ignore=true -Dtest=*.unit.*Test"
-        }
-    }
-
-    features {
-        perfmon {
-        }
-    }
-})
-
-object SlowTest : BuildType({
-    name = "SlowTest"
-
-    vcs {
-        root(DslContext.settingsRoot)
-    }
-
-    steps {
-        maven {
-            goals = "clean test"
-            runnerArgs = "-Dmaven.test.failure.ignore=true -Dtest=*.integration.*Test"
-        }
-    }
-
-    features {
-        perfmon {
-        }
-    }
-})
-
-object Package : BuildType({
-    name = "Package"
-
-    vcs {
-        root(DslContext.settingsRoot)
-    }
-
-    steps {
-        maven {
-            goals = "clean package"
-            runnerArgs = "-Dmaven.test.failure.ignore=true"
-        }
-    }
-
-//    dependencies {
-//        snapshot(Build) {}
-//    }
-
-    triggers {
-        vcs {
+            this.goals = goals
+            this.runnerArgs = runnerArgs
         }
     }
 
